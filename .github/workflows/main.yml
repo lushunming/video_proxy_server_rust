@@ -12,7 +12,8 @@ on:
   release:
     types: [ created ]       # 创建 Release 时触发
   workflow_dispatch:  # 支持手动触发
-
+permissions:
+  contents: write
 env:
   CARGO_TERM_COLOR: always
 
