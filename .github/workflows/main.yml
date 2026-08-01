@@ -39,11 +39,7 @@ jobs:
         with:
           ndk-version: r27
           add-to-path: false
-      # 4. 安装 OpenSSL
-      - name: Install OpenSSL
-        run: |
-            sudo apt-get update
-            sudo apt-get install -y pkg-config libssl-dev
+
       # 4. 安装 cargo-ndk
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
