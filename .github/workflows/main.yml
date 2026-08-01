@@ -1,0 +1,41 @@
+name: Build Rust Android Library (cargo-cross)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [created]
+
+jobs:
+  build-android:
+    name: Build Android .so
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cross compile for Android
+        uses: zijiren233/rust-cross-build@v1
+        with:
+          command: build
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
+            x86_64-linux-android
+            i686-linux-android
+          profile: release
+          ndk-version: r27
+
+      - name: Upload .so artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-libs
+          path: |
+            target/aarch64-linux-android/release/*.so
+            target/armv7-linux-androideabi/release/*.so
+            target/x86_64-linux-android/release/*.so
+            target/i686-linux-android/release/*.so
+          retention-days: 30
