@@ -3,40 +3,73 @@ name: Build Rust Android Library
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
   pull_request:
     branches: [main]
-  release:
-    types: [created]
-  workflow_dispatch:
+  workflow_dispatch:  # 支持手动触发
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   build-android:
-    name: Build ${{ matrix.target }}
+    name: Build Android .so
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - aarch64-linux-android
-          - armv7-linux-androideabi
-          - x86_64-linux-android
-          - i686-linux-android
 
     steps:
+      # 1. 检出代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Cross compile for Android
-        uses: houseabsolute/actions-rust-cross@v1
+      # 2. 安装 Rust 工具链
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          command: build
-          target: ${{ matrix.target }}
-          args: "--release"
-          strip: true
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
 
-      - name: Upload .so artifact
+      # 3. 安装 Android NDK
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27
+          add-to-path: false
+
+      # 4. 安装 cargo-ndk
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      # 5. 缓存 Cargo 依赖（加速构建）
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-android-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-android-
+
+      # 6. 编译所有 Android 架构
+      - name: Build for Android (all architectures)
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -t x86 \
+            -o ./jniLibs build --release
+
+      # 7. 上传构建产物
+      - name: Upload .so artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lib-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/*.so
+          name: android-libs
+          path: jniLibs/
           retention-days: 30
