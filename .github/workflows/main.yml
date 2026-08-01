@@ -9,6 +9,8 @@ on:
       - "Cargo.lock"
   pull_request:
     branches: [main]
+  release:
+    types: [ created ]       # 创建 Release 时触发
   workflow_dispatch:  # 支持手动触发
 
 env:
