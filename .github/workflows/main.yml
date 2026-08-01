@@ -73,3 +73,16 @@ jobs:
           name: android-libs
           path: jniLibs/
           retention-days: 30
+      # ========== 新增：发布到 GitHub Release ==========
+      - name: Package as zip
+        if: github.event_name == 'release'
+        run: |
+          cd jniLibs && zip -r ../android-libs.zip . && cd ..
+
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android-libs.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
