@@ -1,4 +1,4 @@
-name: Build Rust Android Library (cargo-cross)
+name: Build Rust Android Library
 
 on:
   push:
@@ -9,35 +9,34 @@ on:
     types: [created]
   workflow_dispatch:
 
-
 jobs:
   build-android:
-    name: Build Android .so
+    name: Build ${{ matrix.target }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-linux-android
+          - armv7-linux-androideabi
+          - x86_64-linux-android
+          - i686-linux-android
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Cross compile for Android
-        uses: houseabsolute/actions-rust-cross@v1.0.8
+        uses: houseabsolute/actions-rust-cross@v1
         with:
           command: build
-          targets: |
-            aarch64-linux-android
-            armv7-linux-androideabi
-            x86_64-linux-android
-            i686-linux-android
-          profile: release
-          ndk-version: r27
+          target: ${{ matrix.target }}
+          args: "--release"
+          strip: true
 
-      - name: Upload .so artifacts
+      - name: Upload .so artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-libs
-          path: |
-            target/aarch64-linux-android/release/*.so
-            target/armv7-linux-androideabi/release/*.so
-            target/x86_64-linux-android/release/*.so
-            target/i686-linux-android/release/*.so
+          name: lib-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/*.so
           retention-days: 30
